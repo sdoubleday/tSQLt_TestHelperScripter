@@ -1,11 +1,11 @@
 ﻿PARAM(
 
- [Parameter(Mandatory= $true)][String]$Server = "(localdb)\ProjectsV13"
+ [Parameter(Mandatory= $false)][String]$Server = "(localdb)\ProjectsV13"
 ,[Parameter(Mandatory= $true)][String]$Database
 ,[Parameter(Mandatory= $true)][String]$SchemaToPopulate
 ,[Parameter(Mandatory= $true)][String]$ObjectToPopulate
-,[Parameter(Mandatory= $true)][String]$DataBuilderSchema = 'TestHelpers'
-,[Parameter(Mandatory= $true)][String]$DataBuilderObjectName = "DataBuilder_$($SchemaToPopulate)_$($ObjectToPopulate)"
+,[Parameter(Mandatory= $false)][String]$DataBuilderSchema = 'TestHelpers'
+,[Parameter(Mandatory= $false)][String]$DataBuilderObjectName = "DataBuilder_$($SchemaToPopulate)_$($ObjectToPopulate)"
 ,[ValidateNotNullorEmpty()][ValidateScript({
              IF (Test-Path -PathType Container -Path $_ ) 
                  {$True}
@@ -109,14 +109,12 @@ SELECT CASE WHEN Ordinal_Position = 1 THEN ' ' ELSE ',' END +
        AND DATA_TYPE NOT LIKE 'rowversion'
        AND DATA_TYPE NOT LIKE 'timestamp'
 UNION ALL
-SELECT ' FROM [#{{cookiecutter.databuilder_name}}];'';
+SELECT ' FROM [#$DataBuilderObjectName];'';
 EXECUTE sp_executesql @sql;
 RETURN 0'
 UNION ALL
 SELECT ''
 "@;
-
-Out-Host $query;
 
 $sqlcmd.CommandText = $query;
 
@@ -126,8 +124,10 @@ $data = New-Object System.Data.DataSet;
 $adp.Fill($data) | Out-Null;
 
 #Overwrite placeholder.
-New-Item -ItemType File -Force $OutputFileName;
+New-Item -ItemType File -Force $OutputFileName | Out-Null;
 
 $data.Tables[0] | Select-Object -ExpandProperty Column1 | Out-String | Add-Content -Path $OutputFileName -Encoding UTF8; 
 
 $sqlConn.Close();
+
+Get-ChildItem $OutputFileName;
