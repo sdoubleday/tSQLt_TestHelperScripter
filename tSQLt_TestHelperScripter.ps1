@@ -32,7 +32,7 @@ SELECT 'CREATE PROCEDURE [$DataBuilderSchema].[$DataBuilderObjectName]'
 UNION ALL
 SELECT
 CASE WHEN Ordinal_Position = 1 THEN ' ' ELSE ',' END +
-'@'+REPLACE(column_name,' ','_')+' ' + 
+'@'+REPLACE(REPLACE(column_name,' ','_'),'.','_')+' ' + 
         data_type + case data_type
             when 'sql_variant' then ''
             when 'text' then ''
