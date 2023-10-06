@@ -13,10 +13,18 @@
                  Throw "$_ is not a Directory."
              } 
          })][String]$OutputDirectory = ".\$($Database)\$($DataBuilderSchema)\Stored Procedures\"
-
+,[switch]$Append
 )
 
-$OutputFileName = "$OutputDirectory\$DataBuilderObjectName.sql";
+if ($Append.IsPresent) {
+    $OutputFileName = "$OutputDirectory\AllDataBuilders.sql";
+    if (-not $(Test-Path $OutputFileName) ) {
+        New-Item -ItemType File -Force $OutputFileName | Out-Null;
+    }
+}
+else {
+    $OutputFileName = "$OutputDirectory\$DataBuilderObjectName.sql";
+}
 
 #https://www.sqlshack.com/connecting-powershell-to-sql-server/
 
@@ -111,9 +119,9 @@ SELECT CASE WHEN Ordinal_Position = 1 THEN ' ' ELSE ',' END +
 UNION ALL
 SELECT ' FROM [#$DataBuilderObjectName];'';
 EXECUTE sp_executesql @sql;
-RETURN 0'
+RETURN 0;'
 UNION ALL
-SELECT ''
+SELECT 'GO'
 "@;
 
 $sqlcmd.CommandText = $query;
@@ -123,11 +131,13 @@ $adp = New-Object System.Data.SqlClient.SqlDataAdapter $sqlcmd;
 $data = New-Object System.Data.DataSet;
 $adp.Fill($data) | Out-Null;
 
-#Overwrite placeholder.
-New-Item -ItemType File -Force $OutputFileName | Out-Null;
+if (-not $($Append.IsPresent) ) {
+    #Overwrite placeholder.
+    New-Item -ItemType File -Force $OutputFileName | Out-Null;
+}
 
 $data.Tables[0] | Select-Object -ExpandProperty Column1 | Out-String | Add-Content -Path $OutputFileName -Encoding UTF8; 
 
 $sqlConn.Close();
 
-Get-ChildItem $OutputFileName;
+Output-Host $DataBuilderObjectName;
