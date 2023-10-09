@@ -136,8 +136,14 @@ if (-not $($Append.IsPresent) ) {
     New-Item -ItemType File -Force $OutputFileName | Out-Null;
 }
 
-$data.Tables[0] | Select-Object -ExpandProperty Column1 | Out-String | Add-Content -Path $OutputFileName -Encoding UTF8; 
+try {
+    $data.Tables[0] | Select-Object -ExpandProperty Column1 | Out-String | Add-Content -Path $OutputFileName -Encoding UTF8 -ErrorAction Stop;
+}
+catch {
+    Start-Sleep -Seconds 1;
+    $data.Tables[0] | Select-Object -ExpandProperty Column1 | Out-String | Add-Content -Path $OutputFileName -Encoding UTF8 -ErrorAction Continue;
+}
 
 $sqlConn.Close();
 
-Output-Host $DataBuilderObjectName;
+$DataBuilderObjectName | Out-Host;
